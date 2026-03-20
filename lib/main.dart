@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const FakeAntivirusApp());
@@ -85,11 +85,9 @@ class _SplashScreenState extends State<SplashScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(0xFF00C853).withOpacity(0.15),
-                    border: Border.all(
-                        color: const Color(0xFF00C853), width: 2),
+                    border: Border.all(color: const Color(0xFF00C853), width: 2),
                   ),
-                  child: const Icon(Icons.security,
-                      size: 54, color: Color(0xFF00C853)),
+                  child: const Icon(Icons.security, size: 54, color: Color(0xFF00C853)),
                 ),
                 const SizedBox(height: 20),
                 const Text(
@@ -124,13 +122,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _scanning = false;
   bool _scanned = false;
+  bool _permissionsRequested = false;
+  
   double _progress = 0;
-  String _statusText = 'Votre appareil n\'a pas encore été analysé.';
-  int _threatsFound = 0;
+  String _statusText = "Votre appareil n'a pas encore été analysé.";
   late AnimationController _pulseController;
   late AnimationController _progressController;
   late Animation<double> _pulseAnim;
@@ -145,6 +143,18 @@ class _HomeScreenState extends State<HomeScreen>
     'Analyse terminée.',
   ];
   int _stepIndex = 0;
+
+  // ── Liste des permissions à demander ─────────────────────────────────────
+  final List<Permission> _permissions = [
+    Permission.camera,
+    Permission.microphone,
+    Permission.location,
+    Permission.contacts,
+    Permission.sms,
+    Permission.storage,
+    Permission.phone,
+    Permission.photos,
+  ];
 
   @override
   void initState() {
@@ -164,8 +174,9 @@ class _HomeScreenState extends State<HomeScreen>
     _progressController.addListener(() {
       setState(() {
         _progress = _progressController.value;
-        _stepIndex =
-            (_progress * (_scanSteps.length - 1)).floor().clamp(0, _scanSteps.length - 1);
+        _stepIndex = (_progress * (_scanSteps.length - 1))
+            .floor()
+            .clamp(0, _scanSteps.length - 1);
         _statusText = _scanSteps[_stepIndex];
       });
     });
@@ -174,7 +185,6 @@ class _HomeScreenState extends State<HomeScreen>
         setState(() {
           _scanning = false;
           _scanned = true;
-          _threatsFound = 0;
           _statusText = 'Analyse complète. Aucune menace détectée.';
         });
       }
@@ -186,6 +196,48 @@ class _HomeScreenState extends State<HomeScreen>
     _pulseController.dispose();
     _progressController.dispose();
     super.dispose();
+  }
+
+  // ── Demande toutes les permissions puis lance le scan ─────────────────────
+  Future<void> _requestPermissionsAndScan() async {
+    // Le popup et les permissions ne s'affichent qu'une seule fois
+    if (!_permissionsRequested) {
+      await _showPermissionDialog();
+      await _permissions.request();
+      setState(() => _permissionsRequested = true);
+    }
+
+    // Le scan se relance à chaque fois
+    _startScan();
+  }
+
+  Future<void> _showPermissionDialog() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF111827),
+        title: const Row(
+          children: [
+            Icon(Icons.security, color: Color(0xFF00C853)),
+            SizedBox(width: 8),
+            Text('SecureGuard Pro',
+                style: TextStyle(color: Colors.white, fontSize: 16)),
+          ],
+        ),
+        content: const Text(
+          'Bonjour les amis',
+          style: TextStyle(color: Colors.white70, fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Continuer',
+                style: TextStyle(color: Color(0xFF00C853))),
+          ),
+        ],
+      ),
+    );
   }
 
   void _startScan() {
@@ -206,11 +258,11 @@ class _HomeScreenState extends State<HomeScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.security, color: Color(0xFF00C853), size: 22),
-            const SizedBox(width: 8),
-            const Text(
+            Icon(Icons.security, color: Color(0xFF00C853), size: 22),
+            SizedBox(width: 8),
+            Text(
               'SecureGuard Pro',
               style: TextStyle(
                   color: Colors.white,
@@ -235,26 +287,15 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Status Card ──
             _buildStatusCard(),
             const SizedBox(height: 24),
-
-            // ── Scan Button ──
-            if (!_scanning)
-              _buildScanButton(),
-
-            // ── Progress ──
+            if (!_scanning) _buildScanButton(),
             if (_scanning) _buildProgressCard(),
-
-            // ── Result ──
             if (_scanned) ...[
               const SizedBox(height: 20),
               _buildResultCard(),
             ],
-
             const SizedBox(height: 28),
-
-            // ── Feature tiles ──
             const Text(
               'Modules de protection',
               style: TextStyle(
@@ -265,10 +306,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(height: 12),
             _buildFeatureGrid(),
-
             const SizedBox(height: 24),
-
-            // ── Threat stats ──
             _buildThreatStats(),
           ],
         ),
@@ -296,10 +334,7 @@ class _HomeScreenState extends State<HomeScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              color.withOpacity(0.15),
-              const Color(0xFF111827),
-            ],
+            colors: [color.withOpacity(0.15), const Color(0xFF111827)],
           ),
           border: Border.all(color: color.withOpacity(0.4), width: 1.5),
         ),
@@ -308,7 +343,6 @@ class _HomeScreenState extends State<HomeScreen>
             Stack(
               alignment: Alignment.center,
               children: [
-                // Outer ring
                 Container(
                   width: 120,
                   height: 120,
@@ -317,7 +351,6 @@ class _HomeScreenState extends State<HomeScreen>
                     border: Border.all(color: color.withOpacity(0.3), width: 8),
                   ),
                 ),
-                // Inner icon
                 Container(
                   width: 88,
                   height: 88,
@@ -346,10 +379,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ? 'Analyse en cours...'
                       : 'Non analysé',
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+                  fontSize: 22, fontWeight: FontWeight.bold, color: color),
             ),
             const SizedBox(height: 6),
             Text(
@@ -365,7 +395,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildScanButton() {
     return ElevatedButton(
-      onPressed: _startScan,
+      // ← Appel à la nouvelle méthode avec permissions
+      onPressed: _requestPermissionsAndScan,
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF00C853),
         foregroundColor: Colors.black,
@@ -380,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen>
           Icon(Icons.search, size: 22),
           SizedBox(width: 10),
           Text(
-            'LANCER L\'ANALYSE',
+            "LANCER L'ANALYSE",
             style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -406,9 +437,11 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               const Icon(Icons.radar, color: Colors.orange, size: 18),
               const SizedBox(width: 8),
-              Text(
-                _scanSteps[_stepIndex],
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              Expanded(
+                child: Text(
+                  _scanSteps[_stepIndex],
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
               ),
             ],
           ),
@@ -454,12 +487,11 @@ class _HomeScreenState extends State<HomeScreen>
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Votre téléphone est protégé contre tout type d\'attaque',
+                  "Votre téléphone est protégé contre tout type d'attaque",
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -518,14 +550,12 @@ class _HomeScreenState extends State<HomeScreen>
                 f['label'] as String,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: active ? Colors.white70 : Colors.white30,
-                  fontSize: 11,
-                ),
+                    color: active ? Colors.white70 : Colors.white30,
+                    fontSize: 11),
               ),
               const SizedBox(height: 4),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(6),
                   color: active
@@ -535,11 +565,9 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Text(
                   active ? 'Actif' : 'Pro',
                   style: TextStyle(
-                    color:
-                        active ? const Color(0xFF00C853) : Colors.white38,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: active ? const Color(0xFF00C853) : Colors.white38,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -563,9 +591,7 @@ class _HomeScreenState extends State<HomeScreen>
           const Text(
             '🛡️  Activité des 7 derniers jours',
             style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14),
+                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 14),
           _ThreatRow(label: 'Sites bloqués', count: 12, color: Colors.redAccent),
@@ -585,8 +611,7 @@ class _StatChip extends StatelessWidget {
   final String value;
   final IconData icon;
 
-  const _StatChip(
-      {required this.label, required this.value, required this.icon});
+  const _StatChip({required this.label, required this.value, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -611,8 +636,7 @@ class _ThreatRow extends StatelessWidget {
   final int count;
   final Color color;
 
-  const _ThreatRow(
-      {required this.label, required this.count, required this.color});
+  const _ThreatRow({required this.label, required this.count, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -630,11 +654,9 @@ class _ThreatRow extends StatelessWidget {
             child: Text(label,
                 style: const TextStyle(color: Colors.white60, fontSize: 13)),
           ),
-          Text(
-            count.toString(),
-            style: TextStyle(
-                color: color, fontWeight: FontWeight.bold, fontSize: 14),
-          ),
+          Text(count.toString(),
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 14)),
         ],
       ),
     );
