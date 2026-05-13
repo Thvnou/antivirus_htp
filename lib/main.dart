@@ -27,7 +27,7 @@ class FakeAntivirusApp extends StatelessWidget {
 
 // ─── Splash Screen ───────────────────────────────────────────────────────────
 
-class SplashScreen StatefulWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
