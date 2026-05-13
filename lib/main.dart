@@ -11,7 +11,7 @@ class FakeAntivirusApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SecureGuard Pro',
+      title: 'Antivirus HTP Pro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -91,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'SecureGuard Pro',
+                  'Antivirus HTP',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -221,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             Icon(Icons.security, color: Color(0xFF00C853)),
             SizedBox(width: 8),
-            Text('SecureGuard Pro',
+            Text('Antivirus HTP',
                 style: TextStyle(color: Colors.white, fontSize: 16)),
           ],
         ),
@@ -263,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Icon(Icons.security, color: Color(0xFF00C853), size: 22),
             SizedBox(width: 8),
             Text(
-              'SecureGuard Pro',
+              'Antivirus HTP',
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
